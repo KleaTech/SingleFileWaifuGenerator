@@ -1,0 +1,90 @@
+<html>
+<head><title>Random</title></head>
+<body onkeydown="keydown()" onmousedown="keydown()" oncontextmenu="return false">
+	<a href="#" onclick="location.href = location.href.split('?')[0]; return true;" 
+	   style="position: fixed; right: 10px; background: white; border-radius: 10px; border: 10px solid white; box-shadow: 3px 3px lightgrey">LINKS</a>
+
+	<div id="links"></div>
+
+	<img id="frame" style="height: 100%; margin: auto; display: block"></img>
+
+	<script>
+		const urlSearchParams = new URLSearchParams(window.location.search)
+		const type = urlSearchParams.get('type')
+		const category = urlSearchParams.get('category')
+		const API = `https://api.waifu.pics/${type}/${category}`
+
+		if (!(type && category)) {
+			document.getElementById('frame').style.display = 'none';
+			(async () => {
+				const links = document.getElementById('links')
+				const response = await fetch('https://api.waifu.pics/endpoints')
+				const data = await response.json()		
+				for (const type in data) {
+					for (const category of data[type]) {
+						const a = document.createElement('a')
+						a.setAttribute('href', `${location.href}?type=${type}&category=${category}`)
+						a.textContent = `${type} - ${category}`
+						a.style.display = 'block'
+						a.style.paddingBottom = '5px'
+						links.appendChild(a)
+					}
+				}
+			})()
+		}
+				
+		const history = []
+		let index = -1
+		
+		window.onload = keydown
+
+		function getRandomColor() {
+		  const letters = '0123456789ABCDEF';
+		  let color = '#';
+		  for (let i = 0; i < 6; i++) {
+			color += letters[Math.floor(Math.random() * 16)];
+		  }
+		  return color;
+		}
+
+		async function delay(ms) {
+			await new Promise(resolve => setTimeout(resolve, ms))
+		}
+
+		async function next() {
+			index++
+			const frame = document.getElementById('frame');
+			if (history[index]) 
+				frame.setAttribute('src', history[index])
+			else {
+				let url
+				for (let i=0; i<10; i++) {
+					document.body.style.background = getRandomColor()
+					const respond = await Promise.race([fetch(API), delay(1000)])
+					if (!respond) continue
+					const data = await respond.json()
+					url = data.url
+					if (!history.includes(url)) break;
+					await delay(1000)
+				}
+				document.body.style.background = 'dimgrey'
+				frame.setAttribute('src', url)
+				history.push(url)
+			}	
+		}
+
+		async function prev() {
+			const frame = document.getElementById('frame');
+			if (index > 0) index--	
+			frame.setAttribute('src', history[index])
+		}
+
+		function keydown() {
+			if (!(type && category)) return;
+			if (event.key === "ArrowLeft" || event.button === 2) prev()
+			else next()
+			return false;
+		}
+	</script>
+<body>
+</html>
